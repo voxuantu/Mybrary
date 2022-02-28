@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const Author = require('../models/authors')
+const book = require('../models/book')
 
 // All authors route
 router.get('/',async (req,res) => {
@@ -31,12 +32,69 @@ router.post('/',async (req,res) => {
     })
     try {
         const newAuthor = await author.save()
-        res.redirect('authors')
+        res.redirect(`authors/${newAuthor.id}`)
     } catch (error) {
         res.render('authors/new', {
             author : author,
             errMessage : 'Error creating Author'
        })
+    }
+})
+
+router.get('/:id',async (req,res) => {
+    try {
+        const author = await Author.findById(req.params.id)
+        const books = await book.find({ author : req.params.id}).limit(6).exec()
+        res.render('authors/show',{
+            author: author,
+            booksByAuthor : books
+        })
+    } catch (err) {
+        console.log(err)
+        res.redirect('/')
+    }
+})
+
+router.get('/:id/edit',async (req,res) => {
+    try {
+        const author = await Author.findById(req.params.id)
+        res.render('authors/edit', {author : author})
+    } catch (error) {
+        res.redirect('/authors')
+    }
+})
+
+router.put('/:id',async (req,res) => {
+    let author
+    try {
+        author = await Author.findById(req.params.id)
+        author.name = req.body.name
+        await author.save()
+        res.redirect(`/authors/${author.id}`)
+    } catch (error) {
+        if(author == null){
+            res.redirect('/')
+        }else{
+            res.render('authors/edit', {
+                author : author,
+                errMessage : 'Error Updating Author'
+           })
+        }
+    }
+})
+
+router.delete('/:id',async (req,res) => {
+    let author
+    try {
+        author = await Author.findById(req.params.id)
+        await author.remove()
+        res.redirect('/authors')
+    } catch (error) {
+        if(author == null){
+            res.redirect('/')
+        }else{
+            res.redirect(`/authors/${author.id}`)
+        }
     }
 })
 
